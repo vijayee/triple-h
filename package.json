@@ -1,0 +1,29 @@
+{
+  "name": "triple-h",
+  "version": "0.0.1",
+  "description": "Distributed Hamming Heuristic Hash Table",
+  "main": "src/index.js",
+  "scnpmripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "dht",
+    "hamming",
+    "distance",
+    "distributed",
+    "hash",
+    "table"
+  ],
+  "author": "Vijayee Kulkaa",
+  "license": "ISC",
+  "dependencies": {
+    "bs58": "^3.0.0",
+    "hamming-distance": "^1.0.0",
+    "is-ip": "^1.0.0",
+    "libp2p-crypto": "^0.5.0",
+    "mkdirp": "^0.5.1",
+    "multihashing": "^0.2.1",
+    "nat-pmp": "^1.0.0",
+    "network": "^0.2.1"
+  }
+}
