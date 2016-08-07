@@ -2,7 +2,7 @@
 const fs = require('fs')
 const path = require('path')
 const EventEmitter = require('events').EventEmitter
-const natPMP = require('nat-pmp')
+const natUpnp = require('nat-upnp')
 const p2pCrypto = require('libp2p-crypto')
 const Peer = require('./peer.js')
 const config = require('../config.js')
@@ -23,7 +23,7 @@ module.exports = class Node extends EventEmitter {
     }
     _applicationName.set(this, applicationName)
     if (/^win/.test(process.platform)) {
-      _platformPath.set(this, path.join(process.env['SystemDrive'], '/ProgramData/.triple-h'))
+      _platformPath.set(this, path.join(process.env[ 'SystemDrive' ], '/ProgramData/.triple-h'))
     } else if (/^darwin/.test(process.platform)) {
       _platformPath.set(this, '/Library/Application Support/.triple-h')
     } else {
@@ -40,42 +40,62 @@ module.exports = class Node extends EventEmitter {
           if (err) {
             return this.emit('error', err)
           }
-          network.get_gateway_ip((err, ip) => {
-            if (err) {
-              return this.emit('error', err)
-            }
-            let client = natPMP.connect(ip)
-            _client.set(this, client)
-            let port = config.startPort
-            let tries = -1
-            let opts = { type: 'udp', private: port, public: port }
-            let findPort = (err, info)=> {
-              if (err) {
 
-              } else {
-              }
-            }
-            let getPeer= (err, ip)=>{
+          let client = natUpnp.createClient()
+          _client.set(this, client)
+          process.nextTick(()=> {
+            let getPeer = (err, ip)=> {
               let pk = keyPair.public.marshal()
               let id = multihashing(pk, 'sha2-256')
-              _peerInfo.set(this, new Peer(id, ip, port))
-              this.emit('ready', { id: id, ip: ip, port: port })
+              let peerInfo=  new Peer(id, ip, port)
+              _peerInfo.set(this, peerInfo)
+              this.emit('ready',  new Peer(id, ip, port))
+              process.on('exit',()=>{
+                let client = _client.get(this)
+                let peerInfo = _peerInfo.get(this)
+                client.client.portUnmapping({ public: peerInfo.port})
+              })
             }
-            network.get_public_ip((err, ip)=> {
+
+            let port = config.startPort -1
+            let tries = -1
+            let getIp = (err, ip)=>{
               if(err){
-               this.emit('error', err)
-                return network.get_private_ip(getPeer)
+                this.emit('error', err)
+                network.get_private_ip(getPeer)
               }
               getPeer(err,ip)
-            })
 
+            }
+            let findPort = (err)=> {
+              if (err || tries === -1) {
+                tries++
+                if (tries < config.numPortTries) {
+                  port++
+                  client.portMapping({
+                    protocol:'udp',
+                    public: port,
+                    private: port,
+                    ttl: 10
+                  }, findPort)
+                } else {
+                  this.emit('error', new Error("Failed to configure UPnP port"))
+                  port = config.startPort
+                  client.externalIp(getIp)
+                }
+              } else{
+                client.externalIp(getIp)
+              }
+
+            }
+            findPort()
           })
         }
         if (err) {
           keyPair = p2pCrypto.generateKeyPair('RSA', 2048)
           _keyPair.set(this, keyPair)
           let node = p2pCrypto.marshalPrivateKey(keyPair, 'RSA')
-          fs.writeFile(path.join(appFolder, 'node'), node , getNetwork)
+          fs.writeFile(path.join(appFolder, 'node'), node, getNetwork)
         } else {
           keyPair = p2pCrypto.unmarshalPrivateKey(node)
           if (keyPair) {

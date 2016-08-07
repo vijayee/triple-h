@@ -1,12 +1,11 @@
 const dns = require('dns')
 const isIP = require('is-ip')
-const util = require('./utility')
 const bs58 = require('bs58')
 let _port = new WeakMap()
 let _ip = new WeakMap()
 let _id= new WeakMap()
 let _key = new WeakMap()
-let _hash = new WeakMap()
+
 module.exports =  class Peer{
   constructor(id, ip, port){
     if(!Buffer.isBuffer(id)){
@@ -34,27 +33,19 @@ module.exports =  class Peer{
     return _port.get(this)
   }
 
-  get hash(){
-    let hash= _hash.get(this)
-    if(hash){
-      return hash.slice(0)
-    } else{
-      hash = util.hash(this.data)
-      _hash.set(this, hash)
-      return hash.slice(0)
-    }
-  }
-
   get key () {
     let key = _key.get(this)
     if (key) {
       return key
     } else {
-      key = bs58.encode(this.hash)
+      key = bs58.encode(this.id)
       _key.set(this, key)
       return key
     }
     return _key.get(this)
+  }
+  toString(){
+    return `peerId:${this.key} ip:${this.ip} port: ${this.port}`
   }
 
 }

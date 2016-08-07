@@ -3,16 +3,15 @@ const EventEmitter = require('events').EventEmitter
 const hamming = require('hamming-distance')
 let _size = new WeakMap()
 let _nodeId = new WeakMap()
-let _left = new WeakMap()
-let _right = new WeakMap()
+let _zero = new WeakMap()
+let _one = new WeakMap()
 let _bucket = new WeakMap()
-let _nodeId = new WeakMap()
 let _root = new WeakMap()
 let _capped = new WeakMap()
 let Peer = require('./peer.js')
 module.exports = class Bucket extends EventEmitter {
   constructor (nodeId, size, root) {
-    super(this)
+    super()
     _bucket.set(this, [])
     _nodeId.set(this, nodeId)
     _size.set(this, size)
@@ -23,7 +22,7 @@ module.exports = class Bucket extends EventEmitter {
   get size () {
     return _size.get(this)
   }
-
+  /*
   get bucket () {
     let bucket = _bucket.get(this)
     if (bucket) {
@@ -31,7 +30,7 @@ module.exports = class Bucket extends EventEmitter {
     } else {
       return null
     }
-  }
+  }*/
 
   static distance (nodeA, nodeB) {
     return hamming(nodeA, nodeB)
@@ -43,6 +42,42 @@ module.exports = class Bucket extends EventEmitter {
 
   get capped () {
     return _capped.get(this)
+  }
+
+  toArray () {
+    let bucket = _bucket.get(this)
+    if (bucket) {
+      return bucket.slice(0)
+    } else {
+      let zero = _zero.get(this)
+      let one = _one.get(this)
+      return zero.toArray().concat(one.toArray())
+    }
+  }
+  toString(){
+    let bucket =_bucket.get(this)
+
+
+    if(bucket && bucket.length){
+      let bucketStr =""
+      return bucket.reduce(( pre, peer, i)=>{
+        let str =''
+        if(i != 0 ){
+          str += '\n'
+        }
+        str += peer.toString()
+        return pre + str
+      })
+    }
+    else{
+      let zero = _zero.get(this)
+      let one= _one.get(this)
+      if(zero && one) {
+        return zero.toString() + '\n' + one.toString()
+      } else {
+        return ""
+      }
+    }
   }
 
   getBit (peerId, index) {
@@ -68,7 +103,8 @@ module.exports = class Bucket extends EventEmitter {
     if (!index) {
       index = 0
     }
-    if (!isNaN(index)) {
+
+    if (isNaN(index)) {
       throw new Error('Invalid index')
     }
     let bucket = _bucket.get(this)
@@ -86,20 +122,20 @@ module.exports = class Bucket extends EventEmitter {
             let root = _root.get(this)
             root.emit('ping', bucket.slice(0), peer)
           } else {
-            this.split()
-            this.add(peer)
+            this.split(index)
+            this.add(peer, index)
           }
         }
       }
     } else {
       if (this.getBit(peer.id, index++)) {
-        let right = _right.get(this)
-        right.add(peer, index)
-        _right.set(this, right)
+        let one = _one.get(this)
+        one.add(peer, index)
+        _one.set(this, one)
       } else {
-        let left = _left.get(this)
-        left.add(peer, index)
-        _left.set(this, left)
+        let zero = _zero.get(this)
+        zero.add(peer, index)
+        _zero.set(this, zero)
       }
     }
   }
@@ -123,11 +159,31 @@ module.exports = class Bucket extends EventEmitter {
       root.emit('removed', peer)
     } else {
       if (this.getBit(peer.id, index++)) {
-        let right = _right.get(this)
-        right.remove(peer, index)
+        let one = _one.get(this)
+        one.remove(peer, index)
       } else {
-        let left = _left.get(this)
-        left.remove(peer, index)
+        let zero = _zero.get(this)
+        zero.remove(peer, index)
+      }
+    }
+  }
+  get(peerId, index){
+    if (!index) {
+      index = 0
+    }
+    let bucket = _bucket.get(this)
+    if(bucket){
+      let found = bucket.find((peer)=>{
+        return peer.id.compare(peerId) === 0
+      })
+      return found
+    } else{
+      if (this.getBit(peerId, index++)) {
+        let one = _one.get(this)
+        return one.get(peerId, index)
+      } else {
+        let zero = _zero.get(this)
+        return zero.get(peerId, index)
       }
     }
   }
@@ -138,33 +194,35 @@ module.exports = class Bucket extends EventEmitter {
     }
     let bucket = _bucket.get(this)
     let size = _size.get(this)
-    if (bucket.length < size) {
+    if (!(bucket.length >= size)) {
       return
     }
     let root = _root.get(this)
     let nodeId = _nodeId.get(this)
 
-    let right = new Bucket(nodeId, size, root)
-    let left = new Bucket(nodeId, size, root)
+    let one = new Bucket(nodeId, size, root)
+    let zero = new Bucket(nodeId, size, root)
+    _one.set(this, one)
+    _zero.set(this, zero)
 
+    index++
     for (let i = 0; i < bucket.length; i++) {
       let peer = bucket[ i ]
+
       if (this.getBit(peer.id, index)) {
-        right.add(peer, index)
+        one.add(peer, index)
       } else {
-        left.add(peer, index)
+        zero.add(peer, index)
       }
     }
-    if (this.getBit(nodeId, index)) {
-      right.cap()
-    } else {
-      left.cap()
-    }
     bucket = null
-    _bucket.set(bucket)
-    _right.set(this, right)
-    _left.set(this, left)
+    _bucket.set(this, bucket)
 
+    if (this.getBit(nodeId, index)) {
+      zero.cap()
+    } else {
+      one.cap()
+    }
   }
 
   closest (id, count, index) {
@@ -184,18 +242,18 @@ module.exports = class Bucket extends EventEmitter {
     } else {
       let peers
       if (getBit(id, index++)) {
-        let right = _right.get(this)
-        peers = right.closest(id, count, index)
+        let one = _one.get(this)
+        peers = one.closest(id, count, index)
         if (peers.length < count) {
-          let left = _left.get(this)
-          peers = peers.concat(left.closest(id, count, index))
+          let zero = _zero.get(this)
+          peers = peers.concat(zero.closest(id, count, index))
         }
       } else {
-        let left = _left.get(this)
-        peers = left.closest(id, count, index)
+        let zero = _zero.get(this)
+        peers = zero.closest(id, count, index)
         if (peers.length < count) {
-          let right = _right.get(this)
-          peers = peers.concat(right.closest(id, count, index))
+          let one = _one.get(this)
+          peers = peers.concat(one.closest(id, count, index))
         }
       }
       return peers.slice(0, count)
