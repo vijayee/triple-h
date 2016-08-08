@@ -7,6 +7,8 @@ const hamming = require('hamming-distance')
 const randomIp = require('random-ipv4')
 const randomInt = require('random-int')
 const crypto = require('crypto')
+//const pem = require('pem')
+const keypair = require('./keypair')
 
 
 //console.log(util.hash(crypto.randomBytes(34)).length)
@@ -15,6 +17,14 @@ const crypto = require('crypto')
 let node = new Node('triple-h')
 node.on('error', (err)=>{console.log(err)})
 node.on('ready', (info)=>{console.log(info.toString())})
+
+/*
+keypair.createKeypair((err, pair)=>{
+  if (err){
+    throw err
+  }
+  console.log(keypair.unmarshal(pair.marshal()).certificate.toString())
+})*/
 
 /*
 let distance = (nodeA, nodeB) => {

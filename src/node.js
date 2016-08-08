@@ -3,7 +3,7 @@ const fs = require('fs')
 const path = require('path')
 const EventEmitter = require('events').EventEmitter
 const natUpnp = require('nat-upnp')
-const p2pCrypto = require('libp2p-crypto')
+const keypair = require('./keypair')
 const Peer = require('./peer.js')
 const config = require('../config.js')
 const multihashing = require('multihashing')
@@ -27,7 +27,7 @@ module.exports = class Node extends EventEmitter {
     } else if (/^darwin/.test(process.platform)) {
       _platformPath.set(this, '/Library/Application Support/.triple-h')
     } else {
-      _platformPath.set(this, '~/.triple-h')
+      _platformPath.set(this, path.join(process.env[ 'HOME' ],'~/.triple-h'))
     }
     let appFolder = path.join(_platformPath.get(this), applicationName)
     mkdirp(appFolder, (err)=> {
@@ -45,7 +45,7 @@ module.exports = class Node extends EventEmitter {
           _client.set(this, client)
           process.nextTick(()=> {
             let getPeer = (err, ip)=> {
-              let pk = keyPair.public.marshal()
+              let pk = keyPair.publicKey
               let id = multihashing(pk, 'sha2-256')
               let peerInfo=  new Peer(id, ip, port)
               _peerInfo.set(this, peerInfo)
@@ -92,12 +92,18 @@ module.exports = class Node extends EventEmitter {
           })
         }
         if (err) {
-          keyPair = p2pCrypto.generateKeyPair('RSA', 2048)
-          _keyPair.set(this, keyPair)
-          let node = p2pCrypto.marshalPrivateKey(keyPair, 'RSA')
-          fs.writeFile(path.join(appFolder, 'node'), node, getNetwork)
+           keypair.createKeypair((err, pair)=>{
+             if(err){
+               this.emit('error', err)
+             }
+             keyPair= pair
+             _keyPair.set(this, keyPair)
+             let node = pair.marshal()
+             fs.writeFile(path.join(appFolder, 'node'), node, getNetwork)
+           })
+
         } else {
-          keyPair = p2pCrypto.unmarshalPrivateKey(node)
+          keyPair = keypair.unmarshal(node)
           if (keyPair) {
             _keyPair.set(this, keyPair)
             getNetwork()
