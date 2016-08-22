@@ -1,0 +1,5 @@
+message Peer{
+    required string id = 1;
+    required string ip = 2;
+    required int64 port= 3;
+}

@@ -10,14 +10,17 @@ const crypto = require('crypto')
 //const pem = require('pem')
 const keypair = require('./keypair')
 
+const protobuf = require('protocol-buffers')
+const rpcproto = protobuf(fs.readFileSync('./proto/rpc.proto'))
+
 
 //console.log(util.hash(crypto.randomBytes(34)).length)
 
-
+/*
 let node = new Node('triple-h')
 node.on('error', (err)=>{console.log(err)})
 node.on('ready', (info)=>{console.log(info.toString())})
-
+*/
 /*
 keypair.createKeypair((err, pair)=>{
   if (err){
@@ -32,7 +35,7 @@ let distance = (nodeA, nodeB) => {
 }*/
 //console.log(new Buffer('01','binary').toString('hex'))
 //console.log(util.intToBuffer(23338956131).toString('hex'))
-/*
+
 let peers= []
 let nodeId= util.hash(crypto.randomBytes(34))
 let bucket= new Bucket(nodeId,20)
@@ -42,15 +45,15 @@ for(let i = 0; i < (nodeId.length * 8); i++){
 }
 */
 
-/*
+
 for(let i= 0; i < 42; i++ ){
   let peer =new Peer(util.hash(crypto.randomBytes(34)), randomIp() ,randomInt(1, 68000))
   peers.push(peer)
   bucket.add(peer)
 }
 console.log(bucket.toString())
-let peer = bucket.toArray()[0]
+let peer = bucket.toArray().pop()
 console.log(peer.toString())
 let peer2 = bucket.get(peer.id)
 console.log(peer2.toString())
-*/
+

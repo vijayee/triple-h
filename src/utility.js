@@ -2,7 +2,8 @@
 
 const multihashing = require('multihashing')
 const crypto= require('crypto')
-const ayb = require('all-your-base')
+//const ayb = require('all-your-base')
+const utility =require('util')
 
 
 let util = {}
@@ -34,5 +35,6 @@ util.euclid = (a, b) =>{
   }
   return Math.abs(a - b)
 }
+
 
 module.exports= util

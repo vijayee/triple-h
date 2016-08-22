@@ -1,6 +1,7 @@
 const dns = require('dns')
 const isIP = require('is-ip')
 const bs58 = require('bs58')
+const peerproto = protobuf(fs.readFileSync('./proto/peer.proto'))
 let _port = new WeakMap()
 let _ip = new WeakMap()
 let _id= new WeakMap()
@@ -45,7 +46,21 @@ module.exports =  class Peer{
     return _key.get(this)
   }
   toString(){
-    return `peerId:${this.key} ip:${this.ip} port: ${this.port}`
+    return `id:${this.key} ip:${this.ip} port: ${this.port}`
   }
-
+  toJSON(){
+    return {id:this.id, ip: this.ip, port: this.port}
+  }
+  marshal(){
+    let pb= {
+      id: this.id,
+      ip: this.ip,
+      port: this.port
+    }
+    return peerproto.peer.encode(pb)
+  }
+  static unmarshal(protobuf){
+    let pb =peerproto.peer.decode(protobuf)
+    return pb
+  }
 }

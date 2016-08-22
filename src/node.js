@@ -9,11 +9,13 @@ const config = require('../config.js')
 const multihashing = require('multihashing')
 const network = require('network')
 const mkdirp = require('mkdirp')
+const Messenger = require('udp-messenger')
 let _platformPath = new WeakMap()
 let _applicationName = new WeakMap()
 let _keyPair = new WeakMap()
 let _peerInfo = new WeakMap()
 let _client = new WeakMap()
+let _messenger= new WeakMap()
 const fileName = 'node.hhh'
 module.exports = class Node extends EventEmitter {
   constructor (applicationName) {
@@ -27,7 +29,7 @@ module.exports = class Node extends EventEmitter {
     } else if (/^darwin/.test(process.platform)) {
       _platformPath.set(this, '/Library/Application Support/.triple-h')
     } else {
-      _platformPath.set(this, path.join(process.env[ 'HOME' ],'~/.triple-h'))
+      _platformPath.set(this, path.join(process.env[ 'HOME' ],'/.triple-h'))
     }
     let appFolder = path.join(_platformPath.get(this), applicationName)
     mkdirp(appFolder, (err)=> {
@@ -49,6 +51,7 @@ module.exports = class Node extends EventEmitter {
               let id = multihashing(pk, 'sha2-256')
               let peerInfo=  new Peer(id, ip, port)
               _peerInfo.set(this, peerInfo)
+              _messenger.set(this, new Messenger(config.timeout, port, config.packetSize) )
               this.emit('ready',  new Peer(id, ip, port))
               process.on('exit',()=>{
                 let client = _client.get(this)

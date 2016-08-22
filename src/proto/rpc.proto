@@ -1,0 +1,40 @@
+import "peer.proto";
+enum RPCType {
+    Ping = 1;
+    Find_Node = 2;
+    Find_Value= 3;
+    Store= 4;
+}
+enum Direction{
+    Response= 1;
+    Request = 2;
+}
+enum Status{
+    Success = 1;
+    Failure = 2;
+}
+message RPC {
+  required RPCType type =1;
+  required Peer from = 2;
+  required Direction comType = 3;
+  required bytes id = 4;
+  optional bytes payload= 5;
+  optional Status status = 6;
+}
+
+message FindNodeRequest{
+    required bytes id = 1;
+    required int64 count= 1;
+}
+message FindNodeResponse{
+    repeated Peer nodes= 1;
+}
+message FindValueRequest{
+    required bytes hash = 1;
+    required int64 count= 2;
+}
+message FindValueResponse{
+    required bytes hash = 1;
+    optional bytes data = 2;
+    repeated Peer nodes= 3;
+}

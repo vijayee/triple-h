@@ -19,12 +19,18 @@
   "dependencies": {
     "bs58": "^3.0.0",
     "hamming-distance": "^1.0.0",
+    "increment-buffer": "^1.0.0",
     "is-ip": "^1.0.0",
     "mkdirp": "^0.5.1",
     "multihashing": "^0.2.1",
     "nat-upnp": "^1.0.2",
     "network": "^0.2.1",
     "node-forge": "^0.6.42",
-    "protocol-buffers": "^3.1.6"
+    "protocol-buffers": "^3.1.6",
+    "udp-messenger": "0.0.1"
+  },
+  "devDependencies": {
+    "random-int": "^1.0.0",
+    "random-ipv4": "^1.0.2"
   }
 }
