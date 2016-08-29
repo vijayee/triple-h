@@ -4,5 +4,6 @@ module.exports = {
   timeout: 2000,
   packetSize: 512,
   nodeCount: 10,
-  concurrency:3
+  concurrency:3,
+  bucketSize: 20
 }

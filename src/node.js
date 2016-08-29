@@ -10,6 +10,8 @@ const multihashing = require('multihashing')
 const network = require('network')
 const mkdirp = require('mkdirp')
 const Messenger = require('udp-messenger')
+const Bucket = require('./bucket')
+const RPC = require('./rpc')
 let _platformPath = new WeakMap()
 let _applicationName = new WeakMap()
 let _keyPair = new WeakMap()
@@ -18,7 +20,7 @@ let _client = new WeakMap()
 let _messenger= new WeakMap()
 const fileName = 'node.hhh'
 module.exports = class Node extends EventEmitter {
-  constructor (applicationName) {
+  constructor (applicationName, putValue, getValue) {
     super()
     if (typeof applicationName !== 'string') {
       throw new Error('Application name must be a string')
@@ -51,9 +53,12 @@ module.exports = class Node extends EventEmitter {
               let id = multihashing(pk, 'sha2-256')
               let peerInfo=  new Peer(id, ip, port)
               _peerInfo.set(this, peerInfo)
-              _messenger.set(this, new Messenger(config.timeout, port, config.packetSize) )
+              let messenger = new Messenger(config.timeout, port, config.packetSize)
+              _messenger.set(this, messenger)
+              let bucket = new Bucket(peerInfo.id, config.bucketSize)
+              let rpc = new RPC(peerInfo, messenger)
               this.emit('ready',  new Peer(id, ip, port))
-              process.on('exit',()=>{
+              process.on('exit', ()=>{
                 let client = _client.get(this)
                 let peerInfo = _peerInfo.get(this)
                 client.client.portUnmapping({ public: peerInfo.port})
