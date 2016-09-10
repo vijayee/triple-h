@@ -241,7 +241,7 @@ module.exports = class Bucket extends EventEmitter {
         .slice(0, count)
     } else {
       let peers
-      if (getBit(id, index++)) {
+      if (this.getBit(id, index++)) {
         let one = _one.get(this)
         peers = one.closest(id, count, index)
         if (peers.length < count) {

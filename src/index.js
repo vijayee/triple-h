@@ -9,18 +9,37 @@ const randomInt = require('random-int')
 const crypto = require('crypto')
 //const pem = require('pem')
 const keypair = require('./keypair')
+const fs = require('fs')
+const mh = require('multihashing')
+const bs58 = require('bs58')
 
 const protobuf = require('protocol-buffers')
 const rpcproto = protobuf(fs.readFileSync('./proto/rpc.proto'))
 
-
-//console.log(util.hash(crypto.randomBytes(34)).length)
-
 /*
-let node = new Node('triple-h')
+//console.log(util.hash(crypto.randomBytes(34)).length)
+function put(val,cb){
+  let hash = mh(val, 'sha2-256')
+  let key = bs58.encode(hash)
+  fs.writeFile(key, val ,(err)=>{
+    if(err){
+      process.nextTick(()=>{
+        return cb(err)
+      })
+    }
+  })
+}
+function get(hash, cb){
+  fs.read()
+  process.nextTick(()=>{
+    return cb(new Error("No put method defined"))
+  })
+}
+
+let node = new Node('triple-h', noPut, noGet, './node1')
 node.on('error', (err)=>{console.log(err)})
 node.on('ready', (info)=>{console.log(info.toString())})
-*/
+
 /*
 keypair.createKeypair((err, pair)=>{
   if (err){
@@ -56,4 +75,5 @@ let peer = bucket.toArray().pop()
 console.log(peer.toString())
 let peer2 = bucket.get(peer.id)
 console.log(peer2.toString())
+
 

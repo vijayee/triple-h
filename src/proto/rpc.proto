@@ -1,4 +1,10 @@
-import "peer.proto";
+package RPCProto;
+
+message Peer{
+    required bytes id = 1;
+    required string ip = 2;
+    required int64 port= 3;
+}
 enum RPCType {
     Ping = 1;
     Find_Node = 2;
@@ -24,7 +30,7 @@ message RPC {
 
 message FindNodeRequest{
     required bytes id = 1;
-    required int64 count= 1;
+    required int64 count= 2;
 }
 message FindNodeResponse{
     repeated Peer nodes= 1;

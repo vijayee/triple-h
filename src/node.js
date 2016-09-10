@@ -20,18 +20,22 @@ let _client = new WeakMap()
 let _messenger= new WeakMap()
 const fileName = 'node.hhh'
 module.exports = class Node extends EventEmitter {
-  constructor (applicationName, putValue, getValue) {
+  constructor (applicationName, putValue, getValue, pth) {
     super()
     if (typeof applicationName !== 'string') {
       throw new Error('Application name must be a string')
     }
     _applicationName.set(this, applicationName)
-    if (/^win/.test(process.platform)) {
-      _platformPath.set(this, path.join(process.env[ 'SystemDrive' ], '/ProgramData/.triple-h'))
-    } else if (/^darwin/.test(process.platform)) {
-      _platformPath.set(this, '/Library/Application Support/.triple-h')
-    } else {
-      _platformPath.set(this, path.join(process.env[ 'HOME' ],'/.triple-h'))
+    if(pth){
+      _platformPath.set(this, pth)
+    }else {
+      if (/^win/.test(process.platform)) {
+        _platformPath.set(this, path.join(process.env[ 'SystemDrive' ], '/ProgramData/.triple-h'))
+      } else if (/^darwin/.test(process.platform)) {
+        _platformPath.set(this, '/Library/Application Support/.triple-h')
+      } else {
+        _platformPath.set(this, path.join(process.env[ 'HOME' ], '/.triple-h'))
+      }
     }
     let appFolder = path.join(_platformPath.get(this), applicationName)
     mkdirp(appFolder, (err)=> {
@@ -56,12 +60,16 @@ module.exports = class Node extends EventEmitter {
               let messenger = new Messenger(config.timeout, port, config.packetSize)
               _messenger.set(this, messenger)
               let bucket = new Bucket(peerInfo.id, config.bucketSize)
-              let rpc = new RPC(peerInfo, messenger)
-              this.emit('ready',  new Peer(id, ip, port))
+              let rpc = new RPC(peerInfo, messenger, bucket, getValue, putValue)
+              messenger.listen()
+              //this.emit('ready',  peerInfo)
               process.on('exit', ()=>{
-                let client = _client.get(this)
-                let peerInfo = _peerInfo.get(this)
-                client.client.portUnmapping({ public: peerInfo.port})
+                let messenger = _messenger.get(this)
+                messenger.close(()=>{
+                  let client = _client.get(this)
+                  let peerInfo = _peerInfo.get(this)
+                  client.client.portUnmapping({ public: peerInfo.port})
+                })
               })
             }
 
@@ -72,7 +80,7 @@ module.exports = class Node extends EventEmitter {
                 this.emit('error', err)
                 network.get_private_ip(getPeer)
               }
-              getPeer(err,ip)
+              getPeer(err,'127.0.0.1')
 
             }
             let findPort = (err)=> {
